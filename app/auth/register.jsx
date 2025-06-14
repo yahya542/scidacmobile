@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  TextInput,
-  StyleSheet,
-  Alert,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+  View, Text, Image, TextInput, StyleSheet, Alert,
+  TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../../firebase/firebaseconfig'; // pastikan path ini benar
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -25,53 +19,42 @@ export default function Register() {
 
   const handleRegister = async () => {
     if (password !== password2) {
-      Alert.alert("Error", "Maaf konfirmasi password yang dimasukkan tidak valid");
+      Alert.alert("Error", "Konfirmasi password tidak cocok.");
       return;
     }
     if (password.length < 8) {
-      Alert.alert("Error", "Password harus lebih dari 8 karakter");
+      Alert.alert("Error", "Password harus minimal 8 karakter.");
       return;
     }
-
-    const data = { username, email, password, password2 };
 
     setLoading(true);
     setErrorMessage('');
 
     try {
-      const response = await fetch('http://192.168.185.51:8000/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-      const resData = await response.json();
-      console.log('Response register:', resData);
-
-      if (response.ok) {
-        Alert.alert("Success", "Registration successful, silakan login");
-        navigation.navigate('login');
-      } else {
-        let errorText = '';
-
-        if (resData.message) {
-          errorText = resData.message;
-        } else {
-          for (const key in resData) {
-            if (Array.isArray(resData[key])) {
-              errorText += `${key}: ${resData[key].join(', ')}\n`;
-            } else {
-              errorText += `${key}: ${resData[key]}\n`;
-            }
-          }
-        }
-
-        setErrorMessage(errorText.trim());
-        Alert.alert("Error", errorText.trim());
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          displayName: username,
+        });
       }
+
+      Alert.alert("Sukses", "Registrasi berhasil, silakan login.");
+      navigation.navigate('login');
     } catch (error) {
-      Alert.alert("Error", "Terjadi kesalahan, coba lagi nanti.");
-      console.error('Error:', error);
+      console.error("Register error:", error);
+      let message = "Terjadi kesalahan.";
+
+      if (error.code === 'auth/email-already-in-use') {
+        message = "Email sudah digunakan.";
+      } else if (error.code === 'auth/invalid-email') {
+        message = "Email tidak valid.";
+      } else if (error.code === 'auth/weak-password') {
+        message = "Password terlalu lemah.";
+      }
+
+      setErrorMessage(message);
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }
@@ -132,7 +115,7 @@ export default function Register() {
         </View>
         <Image
           style={styles.image1}
-          source={require('../../assets/images/register.png')} // pastikan path ini benar
+          source={require('../../assets/images/register.png')} // pastikan path ini valid
           resizeMode="contain"
         />
       </ScrollView>
@@ -146,7 +129,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    justifyContent: 'flex-start', // perbaikan dari 'top'
+    justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 16,
     backgroundColor: 'orange',
@@ -159,8 +142,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 50,
     marginBottom: 20,
-    elevation: 3, // untuk shadow di Android
-    shadowColor: '#000', // shadow di iOS
+    elevation: 3,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
