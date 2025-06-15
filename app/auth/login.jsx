@@ -3,7 +3,7 @@ import { View, TextInput, Text, StyleSheet, TouchableOpacity, Image, Alert } fro
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../firebase/firebaseconfig'; // pastikan path ini benar
+import { auth } from '../../firebase/firebaseconfig'; 
 
 const Login = () => {
   const [email, setEmail] = useState('');
